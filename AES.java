@@ -2,20 +2,23 @@ import java.util.*;
 
 public class AES {
 
-    private final int KEY_SIZE = 256,
-                      BLOCK_SIZE = 128,
-                      ROUND_NUM = 14,
-                      ROUND_KEY_SIZE = 128,
-                      EXP_KEY_SIZE = 1920,
-                      GF_SIZE = 8,
-                      GF_DIMENSION = (int) Math.pow(2, GF_SIZE);
+    private static final int KEY_SIZE = 256, // bit
+                             BLOCK_SIZE = 128, // bit
+                             ROUND_NUM = 14,
+                             ROUND_KEY_SIZE = 128, // bit
+                             EXP_KEY_SIZE = 1920, // bit
+                             GF_SIZE = 8,
+                             WORD_SIZE = 4, // 1 word = 4 byte
+                             BYTE_SIZE = 8, // 1 byte = 8 bit
+                             POLY_MX = 0x1B,
+                             GF_DIMENSION = 1 << GF_SIZE;
 
     //multiplicationTable di-precompute, roundKey buat cari 15 word keynya
     private int[][] multiplicationTable,
                     roundKey;
 
     //ini s-box encrypt
-    private final int[] S_BOX = {
+    private static final int[] S_BOX = {
         0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
         0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
         0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -35,7 +38,7 @@ public class AES {
     };
 
     //ini s-box decrypt
-    private final int[] S_BOX_I = {
+    private static final int[] S_BOX_I = {
         0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
         0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
         0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D, 0xEE, 0x4C, 0x95, 0x0B, 0x42, 0xFA, 0xC3, 0x4E,
@@ -57,7 +60,7 @@ public class AES {
     //ini constructor
     public AES() {
         multiplicationTable = new int[GF_DIMENSION][GF_DIMENSION];
-        roundKey = new int[4][EXP_KEY_SIZE / 8 / 4];
+        roundKey = new int[WORD_SIZE][EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE];
         fillMultiplicationTable();
     }
 
@@ -84,14 +87,13 @@ public class AES {
     private void fillMultiplicationTable() {
         for (int i = 0; i < GF_DIMENSION; i++) {
             for (int j = 0; j < GF_DIMENSION; j++) {
-                multiplicationTable[i][j] = multiply(i, j, GF_SIZE, 0x1B);
+                multiplicationTable[i][j] = multiply(i, j, GF_SIZE, POLY_MX);
             }
         }
     }
 
     //ini perkalian dalam gf(2^n) dengan polinomial mx
     private int multiply(int x, int y, int n, int mx) {
-        int size = GF_DIMENSION;
         int[] arm = new int[n];
         arm[0] = y;
         
@@ -99,7 +101,7 @@ public class AES {
         for (int i = 1; i < n; i++) {
             int m = (temp & (1 << (n - 1))) >> (n - 1);
             temp <<= 1;
-            temp &= (size - 1);
+            temp &= (GF_DIMENSION - 1);
             if (m == 1) {
                 temp = add(temp, mx);
             }
