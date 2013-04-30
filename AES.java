@@ -21,7 +21,9 @@ public class AES {
                              WORD_SIZE = 4, // 1 word = 4 byte
                              BYTE_SIZE = 8, // 1 byte = 8 bit
                              POLY_MX = 0x1B,
-                             GF_DIMENSION = 1 << GF_SIZE;
+                             GF_DIMENSION = 1 << GF_SIZE,
+                             ENCRYPT = 0, //for state manipulation parameter
+                             DECRYPT = 1; //for state manipulation parameter                             
 
     //multiplicationTable to be precomputed, roundKey contains the 44 word keys
     private int[][] multiplicationTable,
@@ -138,16 +140,132 @@ public class AES {
         }
     }
 
-    //AES encryption
+    //AES encryption, plaintext in array with size 16 (each value of the array stores one byte of plaintext)
     public int[] encrypt(int[] plaintext) {
-        if (!isKeyAvailable) return null;
-        return null;
+        if (!isKeyAvailable) {
+            return null;
+        }
+
+        //transforms the plaintext to a 4x4 byte state matrix
+        int[][] state = new int[WORD_SIZE][WORD_SIZE];
+        for (int i = 0; i < WORD_SIZE; i++) {
+            for (int j = 0; j < WORD_SIZE; j++) {
+                state[j][i] = plaintext[(WORD_SIZE * i) + j];
+            }
+        }
+
+        //first add round key
+        state = addRoundKey(state, 0);
+
+        //round 1 to 10
+        for (int round = 1; round <= ROUND_NUM; round++) {
+            //substitute bytes
+            state = substituteBytes(state, ENCRYPT);
+
+            //shift rows
+            state = shiftRows(state, ENCRYPT);
+
+            //mix columns (only round 1-9)
+            if (round < ROUND_NUM) {
+                state = mixColumns(state, ENCRYPT);
+            }
+
+            //add round key
+            state = addRoundKey(state, round);
+        }
+
+        //transforms the 4x4 byte state matrix to ciphertext
+        int[] ciphertext = new int[WORD_SIZE * WORD_SIZE];
+        for (int i = 0; i < WORD_SIZE; i++) {
+            for (int j = 0; j < WORD_SIZE; j++) {
+                ciphertext[(WORD_SIZE * i) + j] = state[j][i];
+            }
+        }
+
+        return ciphertext;
     }
 
     //AES decryption
     public int[] decrypt(int[] ciphertext) {
         if (!isKeyAvailable) return null;
         return null;
+    }
+
+    //substituteBytes of the AES cipher
+    private int[][] substituteBytes(int[][] state, int mode) {
+        int[][] temp = new int[WORD_SIZE][WORD_SIZE];
+
+        for (int i = 0; i < KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
+            for (int j = 0; j < ROUND_KEY_SIZE / BYTE_SIZE / WORD_SIZE; j++) {
+                if (mode == ENCRYPT) {
+                    temp[i][j] = S_BOX[state[i][j]];
+                } else if (mode == DECRYPT) {
+                    temp[i][j] = S_BOX_I[state[i][j]];
+                }
+            }
+        }
+
+        return temp;
+    }
+
+    //shiftRows of the AES cipher
+    private int[][] shiftRows(int[][] state, int mode) {
+        int[][] temp = new int[WORD_SIZE][WORD_SIZE];
+
+        if (mode == ENCRYPT) {
+            temp[0][0] = state[0][0]; temp[0][1] = state[0][1]; temp[0][2] = state[0][2]; temp[0][3] = state[0][3];
+            temp[1][0] = state[1][1]; temp[1][1] = state[1][2]; temp[1][2] = state[1][3]; temp[1][3] = state[1][0];
+            temp[2][0] = state[2][2]; temp[2][1] = state[2][3]; temp[2][2] = state[2][0]; temp[2][3] = state[2][1];
+            temp[3][0] = state[3][3]; temp[3][1] = state[3][0]; temp[3][2] = state[3][1]; temp[3][3] = state[3][2];
+        } else if (mode == DECRYPT) {
+            temp[0][0] = state[0][0]; temp[0][1] = state[0][1]; temp[0][2] = state[0][2]; temp[0][3] = state[0][3];
+            temp[1][0] = state[1][3]; temp[1][1] = state[1][0]; temp[1][2] = state[1][1]; temp[1][3] = state[1][2];
+            temp[2][0] = state[2][2]; temp[2][1] = state[2][3]; temp[2][2] = state[2][0]; temp[2][3] = state[2][1];
+            temp[3][0] = state[3][1]; temp[3][1] = state[3][2]; temp[3][2] = state[3][3]; temp[3][3] = state[3][0];
+        }
+
+        return temp;
+    }
+
+    private int[][] mixColumns(int[][] state, int mode) {
+        int[][] temp = new int[WORD_SIZE][WORD_SIZE];
+
+        int[][] ar = new int[WORD_SIZE][WORD_SIZE];
+        
+        if (mode == ENCRYPT) {
+            ar[0][0] = 0x02; ar[0][1] = 0x03; ar[0][2] = 0x01; ar[0][3] = 0x01; 
+            ar[1][0] = 0x01; ar[1][1] = 0x02; ar[1][2] = 0x03; ar[1][3] = 0x01; 
+            ar[2][0] = 0x01; ar[2][1] = 0x01; ar[2][2] = 0x02; ar[2][3] = 0x03; 
+            ar[3][0] = 0x03; ar[3][1] = 0x01; ar[3][2] = 0x01; ar[3][3] = 0x02; 
+        } else if (mode == DECRYPT) {
+            ar[0][0] = 0x0E; ar[0][1] = 0x0B; ar[0][2] = 0x0D; ar[0][3] = 0x09; 
+            ar[1][0] = 0x09; ar[1][1] = 0x0E; ar[1][2] = 0x0B; ar[1][3] = 0x0D; 
+            ar[2][0] = 0x0D; ar[2][1] = 0x09; ar[2][2] = 0x0E; ar[2][3] = 0x0B; 
+            ar[3][0] = 0x0B; ar[3][1] = 0x0D; ar[3][2] = 0x09; ar[3][3] = 0x0E; 
+        }
+
+        for (int i = 0; i < WORD_SIZE; i++) {
+            for (int j = 0; j < WORD_SIZE; j++) {
+                for (int k = 0; k < WORD_SIZE; k++) {
+                    temp[i][j] = add(temp[i][j], multiplicationTable[ar[i][k]][state[k][j]]);
+                }
+            }
+        }
+
+        return temp;
+    }
+
+    //addRoundKey of the AES cipher
+    private int[][] addRoundKey(int[][] state, int round) {
+        int[][] temp = new int[WORD_SIZE][WORD_SIZE];
+        
+        for (int i = 0; i < KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
+            for (int j = 0; j < ROUND_KEY_SIZE / BYTE_SIZE / WORD_SIZE; j++) {
+                temp[j][i] = add(roundKey[(KEY_SIZE / BYTE_SIZE / WORD_SIZE * round) + i][j], state[j][i]);
+            }
+        }
+        
+        return temp;
     }
 
     //fill the multiplication table in gf(2^8)
@@ -215,6 +333,25 @@ public class AES {
             }
             System.out.println();
         }
+    }*/
+
+    //buat ngetes encryption
+    /*public static void main(String[] araishikeiwai) {
+        int[] plaintext = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+        int[] key = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+        
+        //int[] plaintext = {0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02};
+        //int[] key = {0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73};
+        
+        AES s = new AES();
+        s.setRoundKey(key);
+        int[] ciphertext = s.encrypt(plaintext);
+
+        for (int i = 0; i < ciphertext.length; i++) {
+            if (ciphertext[i] < 0x10) System.out.printf("0%x ", ciphertext[i]);
+            else System.out.printf("%x ", ciphertext[i]);
+        }
+        System.out.println();
     }*/
 
 }
