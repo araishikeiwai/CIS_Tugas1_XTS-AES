@@ -1,12 +1,22 @@
+/**
+ * AES.java
+ * 
+ * This class represents the AES cipher with 128 bit key
+ *
+ * @author Rick Daniel (rick@araishikeiwai.com)
+ * @version 1.0
+ *
+ */
+
 import java.util.*;
 
 public class AES {
 
-    private static final int KEY_SIZE = 256, // bit
+    private static final int KEY_SIZE = 128, // bit
                              BLOCK_SIZE = 128, // bit
-                             ROUND_NUM = 14,
+                             ROUND_NUM = 10,
                              ROUND_KEY_SIZE = 128, // bit
-                             EXP_KEY_SIZE = 1920, // bit
+                             EXP_KEY_SIZE = 1408, // bit
                              GF_SIZE = 8,
                              WORD_SIZE = 4, // 1 word = 4 byte
                              BYTE_SIZE = 8, // 1 byte = 8 bit
@@ -16,6 +26,8 @@ public class AES {
     //multiplicationTable di-precompute, roundKey buat cari 15 word keynya
     private int[][] multiplicationTable,
                     roundKey;
+
+    private boolean keyAvailable = false;
 
     //ini s-box encrypt
     private static final int[] S_BOX = {
@@ -60,26 +72,70 @@ public class AES {
     //ini constructor
     public AES() {
         multiplicationTable = new int[GF_DIMENSION][GF_DIMENSION];
-        roundKey = new int[WORD_SIZE][EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE];
         fillMultiplicationTable();
+
+        // the roundKey is put into array with row n corresponding to the n-th word
+        roundKey = new int[EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE][WORD_SIZE];
     }
 
-    public void setKey(int[] key) {
-        //ini ngisi roundkey
+    //sebenernya ga terlalu perlu sih kalo setRoundKey baru kan tetep aja yang lama ilang
+    public void reset() {
+        roundKey = new int[EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE][WORD_SIZE];
+        keyAvailable = false;
     }
 
-    private int expandKey() {
-        //ini nge-expand roundkey nya
-        return 0;
+    /**
+     * @param key the key used for the cipher, 128 bit long in array with size 16 (each value of the array stores one byte of key)
+     */
+    public int[][] setRoundKey(int[] key) {
+        //ini ngisi roundKey terus ngereturn hasilnya (buat dipake di XTS ntar)
+        for (int i = 0; i < KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
+            for (int j = 0; j < ROUND_KEY_SIZE / BYTE_SIZE / WORD_SIZE; j++) {
+                roundKey[i][j] = key[(KEY_SIZE / BYTE_SIZE / WORD_SIZE * i) + j];
+            }
+        }
+        expandKey();
+
+        keyAvailable = true;
+        return roundKey;
+    }
+
+    private void expandKey() {
+        int[] rcon = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+        for (int i = KEY_SIZE / BYTE_SIZE / WORD_SIZE; i < EXP_KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
+            int[] temp = new int[WORD_SIZE];
+            for (int j = 0; j < temp.length; j++) {
+                temp[j] = roundKey[i - 1][j];
+            }
+
+            if (i % 4 == 0) {
+                int temp2 = temp[0];
+                for (int j = 0; j < 3; j++) {
+                    temp[j] = temp[j + 1];
+                }
+                temp[3] = temp2;
+
+                for (int j = 0; j < temp.length; j++) {
+                    temp[j] = S_BOX[temp[j]];
+                }
+                temp[0] = add(temp[0], rcon[i / 4]);
+            }
+
+            for (int j = 0; j < WORD_SIZE; j++) {
+                roundKey[i][j] = add(temp[j], roundKey[i - WORD_SIZE][j]);
+            }
+        }
     }
 
     public int[] encrypt(int[] plaintext) {
         //ini nge-encrypt
+        if (!keyAvailable) return null;
         return null;
     }
 
     public int[] decrypt(int[] ciphertext) {
         //ini nge-decrypt
+        if (!keyAvailable) return null;
         return null;
     }
 
@@ -121,5 +177,17 @@ public class AES {
     private int add(int x, int y) {
         return x ^ y;
     }
+
+    //buat ngetes exp key-nya, udah sesuai sama jawaban uts
+    /*public static void main(String[] araishikeiwai) {
+        int[] key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        int[][] rk = new AES().setRoundKey(key);
+        for (int i = 0; i < rk.length; i++) {
+            for (int j = 0; j < rk[i].length; j++) {
+                System.out.printf("%x ", rk[i][j]);
+            }
+            System.out.println();
+        }
+    }*/
 
 }
