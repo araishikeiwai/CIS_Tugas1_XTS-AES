@@ -4,7 +4,7 @@
  * This class represents the AES cipher with 128 bit key
  *
  * @author Rick Daniel (rick@araishikeiwai.com)
- * @version alpha
+ * @version 1.0
  *
  */
 
@@ -187,8 +187,47 @@ public class AES {
 
     //AES decryption
     public int[] decrypt(int[] ciphertext) {
-        if (!isKeyAvailable) return null;
-        return null;
+        if (!isKeyAvailable) {
+            return null;
+        }
+
+        //transforms the ciphertext to a 4x4 byte state matrix
+        int[][] state = new int[WORD_SIZE][WORD_SIZE];
+        for (int i = 0; i < WORD_SIZE; i++) {
+            for (int j = 0; j < WORD_SIZE; j++) {
+                state[j][i] = ciphertext[(WORD_SIZE * i) + j];
+            }
+        }
+
+        //first add round key
+        state = addRoundKey(state, 10);
+
+        //round 1 to 10
+        for (int round = 1; round <= ROUND_NUM; round++) {
+            //inverse shift rows
+            state = shiftRows(state, DECRYPT);
+
+            //inverse substitute bytes
+            state = substituteBytes(state, DECRYPT);
+
+            //add round key (with the key round inverted)
+            state = addRoundKey(state, (10 - round));
+
+            //inverse mix columns (only round 1-9)
+            if (round < ROUND_NUM) {
+                state = mixColumns(state, DECRYPT);
+            }
+        }
+
+        //transforms the 4x4 byte state matrix to plaintext
+        int[] plaintext = new int[WORD_SIZE * WORD_SIZE];
+        for (int i = 0; i < WORD_SIZE; i++) {
+            for (int j = 0; j < WORD_SIZE; j++) {
+                plaintext[(WORD_SIZE * i) + j] = state[j][i];
+            }
+        }
+
+        return plaintext;
     }
 
     //substituteBytes of the AES cipher
@@ -340,9 +379,6 @@ public class AES {
         int[] plaintext = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
         int[] key = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
         
-        //int[] plaintext = {0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02};
-        //int[] key = {0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73, 0x73};
-        
         AES s = new AES();
         s.setRoundKey(key);
         int[] ciphertext = s.encrypt(plaintext);
@@ -350,6 +386,22 @@ public class AES {
         for (int i = 0; i < ciphertext.length; i++) {
             if (ciphertext[i] < 0x10) System.out.printf("0%x ", ciphertext[i]);
             else System.out.printf("%x ", ciphertext[i]);
+        }
+        System.out.println();
+    }*/
+
+    //buat ngetes decryption
+    /*public static void main(String[] araishikeiwai) {
+        int[] ciphertext = {0x5a, 0x69, 0x37, 0xa8, 0x27, 0xb9, 0x72, 0x54, 0xfb, 0x1f, 0xf0, 0xb5, 0x3b, 0x93, 0x0a, 0xb6};
+        int[] key = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+        
+        AES s = new AES();
+        s.setRoundKey(key);
+        int[] plaintext = s.decrypt(ciphertext);
+
+        for (int i = 0; i < plaintext.length; i++) {
+            if (plaintext[i] < 0x10) System.out.printf("0%x ", plaintext[i]);
+            else System.out.printf("%x ", plaintext[i]);
         }
         System.out.println();
     }*/
