@@ -4,7 +4,7 @@
  * This class represents the AES cipher with 128 bit key
  *
  * @author Rick Daniel (rick@araishikeiwai.com)
- * @version 1.0
+ * @version alpha
  *
  */
 
@@ -23,13 +23,14 @@ public class AES {
                              POLY_MX = 0x1B,
                              GF_DIMENSION = 1 << GF_SIZE;
 
-    //multiplicationTable di-precompute, roundKey buat cari 15 word keynya
+    //multiplicationTable to be precomputed, roundKey contains the 44 word keys
     private int[][] multiplicationTable,
                     roundKey;
 
-    private boolean keyAvailable = false;
+    //stores whether the round key has been computed or not
+    private boolean isKeyAvailable = false;
 
-    //ini s-box encrypt
+    //s-box
     private static final int[] S_BOX = {
         0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
         0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -49,7 +50,7 @@ public class AES {
         0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
     };
 
-    //ini s-box decrypt
+    //s-box inverted
     private static final int[] S_BOX_I = {
         0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
         0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
@@ -69,7 +70,7 @@ public class AES {
         0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
     };
 
-    //ini constructor
+    //the constructor
     public AES() {
         multiplicationTable = new int[GF_DIMENSION][GF_DIMENSION];
         fillMultiplicationTable();
@@ -78,17 +79,18 @@ public class AES {
         roundKey = new int[EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE][WORD_SIZE];
     }
 
-    //sebenernya ga terlalu perlu sih kalo setRoundKey baru kan tetep aja yang lama ilang
+    //resets the key to null, not really needed though
     public void reset() {
         roundKey = new int[EXP_KEY_SIZE / WORD_SIZE / BYTE_SIZE][WORD_SIZE];
-        keyAvailable = false;
+        isKeyAvailable = false;
     }
 
     /**
+     * fills the first round keys (which is the same with original key) and then calls expandKey() to expand it
+     * 
      * @param key the key used for the cipher, 128 bit long in array with size 16 (each value of the array stores one byte of key)
      */
-    public int[][] setRoundKey(int[] key) {
-        //ini ngisi roundKey terus ngereturn hasilnya (buat dipake di XTS ntar)
+    public void setRoundKey(int[] key) {
         for (int i = 0; i < KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
             for (int j = 0; j < ROUND_KEY_SIZE / BYTE_SIZE / WORD_SIZE; j++) {
                 roundKey[i][j] = key[(KEY_SIZE / BYTE_SIZE / WORD_SIZE * i) + j];
@@ -96,74 +98,97 @@ public class AES {
         }
         expandKey();
 
-        keyAvailable = true;
-        return roundKey;
+        isKeyAvailable = true;
     }
 
+    //used in setRoundKey to expand the round key
     private void expandKey() {
+        //the rcon value, starting from rcon[1], so i put 0x00 in rcon[0]
         int[] rcon = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+
         for (int i = KEY_SIZE / BYTE_SIZE / WORD_SIZE; i < EXP_KEY_SIZE / BYTE_SIZE / WORD_SIZE; i++) {
+            //corresponding to the algorithm shown in class slide: temp = w[i - 1]
             int[] temp = new int[WORD_SIZE];
             for (int j = 0; j < temp.length; j++) {
                 temp[j] = roundKey[i - 1][j];
             }
 
+            //if (i mod 4 == 0)
             if (i % 4 == 0) {
+                //RotWord()
                 int temp2 = temp[0];
                 for (int j = 0; j < 3; j++) {
                     temp[j] = temp[j + 1];
                 }
                 temp[3] = temp2;
 
+                //SubWord
                 for (int j = 0; j < temp.length; j++) {
                     temp[j] = S_BOX[temp[j]];
                 }
+
+                //XOR rcon[i / 4]
                 temp[0] = add(temp[0], rcon[i / 4]);
             }
 
+            //w[i] = w[i - 4] XOR temp
             for (int j = 0; j < WORD_SIZE; j++) {
                 roundKey[i][j] = add(temp[j], roundKey[i - WORD_SIZE][j]);
             }
         }
     }
 
+    //AES encryption
     public int[] encrypt(int[] plaintext) {
-        //ini nge-encrypt
-        if (!keyAvailable) return null;
+        if (!isKeyAvailable) return null;
         return null;
     }
 
+    //AES decryption
     public int[] decrypt(int[] ciphertext) {
-        //ini nge-decrypt
-        if (!keyAvailable) return null;
+        if (!isKeyAvailable) return null;
         return null;
     }
 
-    //ini ngisi tabel perkalian gf(2^8)
+    //fill the multiplication table in gf(2^8)
     private void fillMultiplicationTable() {
         for (int i = 0; i < GF_DIMENSION; i++) {
-            for (int j = 0; j < GF_DIMENSION; j++) {
+            for (int j = i; j < GF_DIMENSION; j++) {
                 multiplicationTable[i][j] = multiply(i, j, GF_SIZE, POLY_MX);
+                multiplicationTable[j][i] = multiplicationTable[i][j];
             }
         }
     }
 
-    //ini perkalian dalam gf(2^n) dengan polinomial mx
+    //multiplication in gf(2^n) with polynomial mx
     private int multiply(int x, int y, int n, int mx) {
+        //array to store the results of multiplication of y
         int[] arm = new int[n];
         arm[0] = y;
         
         int temp = y;
+
+        //find multiplication of y with 2^i
         for (int i = 1; i < n; i++) {
+            //check the leftmost bit
             int m = (temp & (1 << (n - 1))) >> (n - 1);
+
+            //shift left
             temp <<= 1;
+
+            //take GF_DIMENSION bit only
             temp &= (GF_DIMENSION - 1);
+
+            //if the previously checked leftmost bit is 1, XOR with polynomial mx
             if (m == 1) {
                 temp = add(temp, mx);
             }
+
+            //store y times 2^i in arm
             arm[i] = temp;
         }
         
+        //find the result of x times y
         int res = 0;
         for (int i = 0; i < n; i++) {
             if (((x & (1 << i)) >> (i)) == 1) {
@@ -173,7 +198,7 @@ public class AES {
         return res;
     }
 
-    //ini penjumlahan dalam gf
+    //addition in gf === xor
     private int add(int x, int y) {
         return x ^ y;
     }
@@ -181,7 +206,9 @@ public class AES {
     //buat ngetes exp key-nya, udah sesuai sama jawaban uts
     /*public static void main(String[] araishikeiwai) {
         int[] key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        int[][] rk = new AES().setRoundKey(key);
+        AES s = new AES();
+        s.setRoundKey(key);
+        int[][] rk = s.roundKey;
         for (int i = 0; i < rk.length; i++) {
             for (int j = 0; j < rk[i].length; j++) {
                 System.out.printf("%x ", rk[i][j]);
