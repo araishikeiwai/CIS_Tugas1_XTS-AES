@@ -200,7 +200,7 @@ public class AES {
         }
 
         //first add round key
-        state = addRoundKey(state, 10);
+        state = addRoundKey(state, ROUND_NUM);
 
         //round 1 to 10
         for (int round = 1; round <= ROUND_NUM; round++) {
@@ -211,7 +211,7 @@ public class AES {
             state = substituteBytes(state, DECRYPT);
 
             //add round key (with the key round inverted)
-            state = addRoundKey(state, (10 - round));
+            state = addRoundKey(state, (ROUND_NUM - round));
 
             //inverse mix columns (only round 1-9)
             if (round < ROUND_NUM) {
