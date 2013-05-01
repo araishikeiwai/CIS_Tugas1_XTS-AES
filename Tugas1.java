@@ -112,7 +112,21 @@ public class Tugas1 extends JFrame {
 					JOptionPane.showMessageDialog(null, "Please specify target, key, and result files.");
 					return;
 				}
-				JOptionPane.showMessageDialog(null, "Ready!");
+
+				try {
+					int[] targetBytes = CisUtils.toIntArray(targetFile);
+					StringBuilder sb = new StringBuilder();
+					sb.append("Content of target file:\n\n");
+					for (int i = 0; i < targetBytes.length; i++)
+					{
+						sb.append(" ");
+						sb.append("" + targetBytes[i]);
+					}
+
+					JOptionPane.showMessageDialog(null, sb.toString());
+				} catch (IOException e) {
+					JOptionPane.showMessageDialog(null, "Something weird happened!");
+				}
 			}
 		};
 		encryptButton.addActionListener(listener);
