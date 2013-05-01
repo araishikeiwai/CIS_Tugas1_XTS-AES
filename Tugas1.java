@@ -124,6 +124,11 @@ public class Tugas1 extends JFrame {
 					}
 
 					JOptionPane.showMessageDialog(null, sb.toString());
+
+					// tes tulis berkasnya lagi
+					CisUtils.writeToFile(targetBytes, resultFile);
+
+					JOptionPane.showMessageDialog(null, "File has been duplicated to " + resultFile.getName());
 				} catch (IOException e) {
 					JOptionPane.showMessageDialog(null, "Something weird happened!");
 				}

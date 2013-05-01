@@ -19,4 +19,15 @@ public class CisUtils {
 
 		return intResult;
 	}
+
+	public static void writeToFile(int[] arr, File file) throws IOException {
+		FileOutputStream stream = new FileOutputStream(file);
+
+		byte[] data = new byte[arr.length];
+		for (int i = 0; i < arr.length; i++)
+			data[i] = (byte)(arr[i] - 128);
+
+		stream.write(data);
+		stream.close();
+	}
 }
