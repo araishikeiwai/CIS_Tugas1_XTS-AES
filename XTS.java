@@ -16,7 +16,8 @@ class XTS {
 
     public XTS(int[] key, int[] tweak) {
         this.key = key;
-        this.tweak = tweak;
+        if (tweak != null)
+            this.tweak = tweak;
 
         int[] key1 = new int[SPLIT_KEY_SIZE / BYTE_SIZE];
         System.arraycopy(key, 0, key1, 0, key1.length);
