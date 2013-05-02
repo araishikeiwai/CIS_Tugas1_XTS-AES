@@ -14,7 +14,10 @@ public class XTS {
     private static AES aes2;
     
 
-    public XTS(int[] key, int[] tweak) {
+    public XTS(int[] key, int[] tweak) throws CipherException {
+        if (key.length != 32)
+            throw new CipherException("Key must have exactly 256 bits.");
+
         this.key = key;
         if (tweak != null)
             this.tweak = tweak;

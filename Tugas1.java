@@ -12,10 +12,10 @@ public class Tugas1 extends JFrame {
 	File targetFile, keyFile, resultFile;
 
 	public Tugas1() {
-		super("Assignment 1 CIS");
+		super("XTS-AES Cipher");
 
 		this.setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
-		this.setSize(new Dimension(500, 300));
+		this.setSize(new Dimension(300, 300));
 		this.setLocationRelativeTo(null);
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
@@ -115,22 +115,30 @@ public class Tugas1 extends JFrame {
 
 				try {
 					int[] targetBytes = CisUtils.toIntArray(targetFile);
-					StringBuilder sb = new StringBuilder();
-					sb.append("Content of target file:\n\n");
-					for (int i = 0; i < targetBytes.length; i++)
+					int[] keyBytes = CisUtils.toIntArray(keyFile);
+					XTS cipher = new XTS(keyBytes, null);
+
+					int[] resultBytes;
+					String verb;
+					if (ev.getSource() == encryptButton)
 					{
-						sb.append(" ");
-						sb.append("" + targetBytes[i]);
+						resultBytes = cipher.encrypt(targetBytes);
+						verb = "encrypted";
+					}
+					else
+					{
+						resultBytes = cipher.decrypt(targetBytes);
+						verb = "decrypted";
 					}
 
-					JOptionPane.showMessageDialog(null, sb.toString());
-
-					// tes tulis berkasnya lagi
-					CisUtils.writeToFile(targetBytes, resultFile);
-
-					JOptionPane.showMessageDialog(null, "File has been duplicated to " + resultFile.getName());
+					CisUtils.writeToFile(resultBytes, resultFile);
+					JOptionPane.showMessageDialog(null, targetFile.getName() + " has been " + verb + " into " + resultFile.getName() + ".", "Success", JOptionPane.INFORMATION_MESSAGE);
 				} catch (IOException e) {
-					JOptionPane.showMessageDialog(null, "Something weird happened!");
+					JOptionPane.showMessageDialog(null, "Input/output error happened.", "Error", JOptionPane.ERROR_MESSAGE);
+				} catch (CipherException e) {
+					JOptionPane.showMessageDialog(null, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				} catch (Exception e) {
+					JOptionPane.showMessageDialog(null, "Something weird happened.", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		};
