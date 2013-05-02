@@ -1,4 +1,4 @@
-class XTS {
+public class XTS {
 
     private static final int KEY_SIZE = 256;
     private static final int SPLIT_KEY_SIZE = 128;
