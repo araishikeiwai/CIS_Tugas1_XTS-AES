@@ -25,7 +25,7 @@ public class XTS {
         }
 
         if (this.tweak.length != 16) {
-            throw new CipherException("Tweak must have exactly 16 bits.");
+            throw new CipherException("Tweak must have exactly 128 bits.");
         }
 
         int[] key1 = new int[SPLIT_KEY_SIZE / BYTE_SIZE];
