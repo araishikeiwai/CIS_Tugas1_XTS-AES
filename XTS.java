@@ -19,6 +19,10 @@ public class XTS {
             throw new CipherException("Key must have exactly 256 bits.");
         }
 
+        if (tweak.length != 32) {
+            throw new CipherException("Tweak must have exactly 256 bits.");
+        }
+
         this.key = key;
         if (tweak != null) {
             this.tweak = tweak;

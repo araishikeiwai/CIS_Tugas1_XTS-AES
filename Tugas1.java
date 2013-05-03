@@ -1,3 +1,13 @@
+/**
+ * AES.java
+ * 
+ * This class represents main program
+ *
+ * @author Ashar Fuadi (fushar@gmail.com)
+ * @version 1.0
+ *
+ */
+
 import java.io.*;
 import java.awt.*;          
 import java.awt.event.*;    
@@ -114,24 +124,22 @@ public class Tugas1 extends JFrame {
 				}
 
 				try {
-					int[] targetBytes = CisUtils.toIntArray(targetFile);
-					int[] keyBytes = CisUtils.toIntArray(keyFile);
+					int[] targetBytes = CipherUtils.toIntArray(targetFile);
+					int[] keyBytes = CipherUtils.toIntArray(keyFile);
 					XTS cipher = new XTS(keyBytes, null);
 
 					int[] resultBytes;
 					String verb;
-					if (ev.getSource() == encryptButton)
-					{
+					if (ev.getSource() == encryptButton) {
 						resultBytes = cipher.encrypt(targetBytes);
 						verb = "encrypted";
 					}
-					else
-					{
+					else {
 						resultBytes = cipher.decrypt(targetBytes);
 						verb = "decrypted";
 					}
 
-					CisUtils.writeToFile(resultBytes, resultFile);
+					CipherUtils.writeToFile(resultBytes, resultFile);
 					JOptionPane.showMessageDialog(null, targetFile.getName() + " has been " + verb + " into " + resultFile.getName() + ".", "Success", JOptionPane.INFORMATION_MESSAGE);
 				} catch (IOException e) {
 					JOptionPane.showMessageDialog(null, "Input/output error happened.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -150,15 +158,15 @@ public class Tugas1 extends JFrame {
 	}
 
 	public static void main(String[] args) {
+		// Use system look and feel.
 		try {   
         	 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());  
     	}  
       	catch (Exception e) {  
     	}
 
+    	// Run the program.
     	Tugas1 app = new Tugas1();
-    	
-
     	app.setVisible(true);
 	}
 }
