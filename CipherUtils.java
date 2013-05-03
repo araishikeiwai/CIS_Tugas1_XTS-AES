@@ -1,6 +1,6 @@
 import java.io.*;
 
-public class CisUtils {
+public class CipherUtils {
 
     private static final int GF_SIZE = 128,
                              BLOCK_SIZE = 128,

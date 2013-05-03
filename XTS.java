@@ -19,13 +19,13 @@ public class XTS {
             throw new CipherException("Key must have exactly 256 bits.");
         }
 
-        if (tweak.length != 32) {
-            throw new CipherException("Tweak must have exactly 256 bits.");
-        }
-
         this.key = key;
         if (tweak != null) {
             this.tweak = tweak;
+        }
+
+        if (this.tweak.length != 16) {
+            throw new CipherException("Tweak must have exactly 16 bits.");
         }
 
         int[] key1 = new int[SPLIT_KEY_SIZE / BYTE_SIZE];
@@ -134,11 +134,11 @@ public class XTS {
 
         int[] temp = alpha;
         for (int i = 0; i < blockKe - 1; i++) {
-            temp = CisUtils.multiplyGF2_128(temp, alpha);
+            temp = CipherUtils.multiplyGF2_128(temp, alpha);
         }
 
         int[] alphaPangkat = temp;
-        int[] te = CisUtils.multiplyGF2_128(hasilEncryptSatu, alphaPangkat);
+        int[] te = CipherUtils.multiplyGF2_128(hasilEncryptSatu, alphaPangkat);
 
         int[] pepe = new int[16];
         for (int i = 0; i < pepe.length; i++) {
@@ -163,11 +163,11 @@ public class XTS {
 
         int[] temp = alpha;
         for (int i = 0; i < blockKe - 1; i++) {
-            temp = CisUtils.multiplyGF2_128(temp, alpha);
+            temp = CipherUtils.multiplyGF2_128(temp, alpha);
         }
 
         int[] alphaPangkat = temp;
-        int[] te = CisUtils.multiplyGF2_128(hasilEncryptSatu, alphaPangkat);
+        int[] te = CipherUtils.multiplyGF2_128(hasilEncryptSatu, alphaPangkat);
 
         int[] cece = new int[16];
         for (int i = 0; i < cece.length; i++) {
